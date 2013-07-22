@@ -43,5 +43,6 @@ echo "ro.build.fingerprint=$BUILD_FINGERPRINT"
 echo "ro.build.characteristics=$TARGET_AAPT_CHARACTERISTICS"
 
 echo "ro.demented.device=$DEMENTED_DEVICE"
+echo "ro.kernel.toolchain=$TARGET_KERNEL_CUSTOM_TOOLCHAIN"
 
 echo "# end build properties"
