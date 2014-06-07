@@ -92,13 +92,24 @@ ifneq ($(USE_CCACHE),)
   # Check that the executable is here.
   ccache := $(strip $(wildcard $(ccache)))
   ifdef ccache
-    # prepend ccache if necessary
-    ifneq ($(ccache),$(firstword $($(combo_var_prefix)CC)))
-      $(combo_var_prefix)CC := $(ccache) $($(combo_var_prefix)CC)
+    ifndef CC_WRAPPER
+      CC_WRAPPER := $(ccache)
     endif
-    ifneq ($(ccache),$(firstword $($(combo_var_prefix)CXX)))
-      $(combo_var_prefix)CXX := $(ccache) $($(combo_var_prefix)CXX)
+    ifndef CXX_WRAPPER
+      CXX_WRAPPER := $(ccache)
     endif
     ccache =
+  endif
+endif
+
+# The C/C++ compiler can be wrapped by setting the CC/CXX_WRAPPER vars.
+ifdef CC_WRAPPER
+  ifneq ($(CC_WRAPPER),$(firstword $($(combo_var_prefix)CC)))
+    $(combo_var_prefix)CC := $(CC_WRAPPER) $($(combo_var_prefix)CC)
+  endif
+endif
+ifdef CXX_WRAPPER
+  ifneq ($(CXX_WRAPPER),$(firstword $($(combo_var_prefix)CXX)))
+    $(combo_var_prefix)CXX := $(CXX_WRAPPER) $($(combo_var_prefix)CXX)
   endif
 endif
