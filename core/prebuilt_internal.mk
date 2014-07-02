@@ -92,7 +92,7 @@ endif  # prebuilt_module_is_a_library
 ifdef LOCAL_INSTALLED_MODULE
 ifdef LOCAL_SHARED_LIBRARIES
 $(LOCAL_2ND_ARCH_VAR_PREFIX)$(my_prefix)DEPENDENCIES_ON_SHARED_LIBRARIES += \
-  $(LOCAL_MODULE):$(LOCAL_INSTALLED_MODULE):$(subst $(space),$(comma),$(LOCAL_SHARED_LIBRARIES))
+  $(my_register_name):$(LOCAL_INSTALLED_MODULE):$(subst $(space),$(comma),$(LOCAL_SHARED_LIBRARIES))
 
 # We also need the LOCAL_BUILT_MODULE dependency,
 # since we use -rpath-link which points to the built module's path.
@@ -165,7 +165,7 @@ include $(BUILD_SYSTEM)/dex_preopt_odex_install.mk
 # Sign and align non-presigned .apks.
 $(built_module) : $(my_prebuilt_src_file) | $(ACP) $(ZIPALIGN) $(SIGNAPK_JAR)
 	$(transform-prebuilt-to-target)
-ifdef my_extracted_jni_libs
+ifdef extracted_jni_libs
 	$(hide) zip -d $@ 'lib/*.so'  # strip embedded JNI libraries.
 endif
 ifneq ($(LOCAL_CERTIFICATE),PRESIGNED)

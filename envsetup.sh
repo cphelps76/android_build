@@ -58,7 +58,6 @@ function check_product()
         echo "Couldn't locate the top of the tree.  Try setting TOP." >&2
         return
     fi
-    CALLED_FROM_SETUP=true BUILD_SYSTEM=build/core \
         TARGET_PRODUCT=$1 \
         TARGET_BUILD_VARIANT= \
         TARGET_BUILD_TYPE= \
@@ -169,9 +168,8 @@ function setpaths()
             ;;
     esac
 
-    export ANDROID_QTOOLS=$T/development/emulator/qtools
     export ANDROID_DEV_SCRIPTS=$T/development/scripts:$T/prebuilts/devtools/tools
-    export ANDROID_BUILD_PATHS=$(get_build_var ANDROID_BUILD_PATHS):$ANDROID_QTOOLS:$ANDROID_TOOLCHAIN:$ANDROID_TOOLCHAIN_2ND_ARCH:$ANDROID_KERNEL_TOOLCHAIN_PATH$ANDROID_DEV_SCRIPTS:
+    export ANDROID_BUILD_PATHS=$(get_build_var ANDROID_BUILD_PATHS):$ANDROID_TOOLCHAIN:$ANDROID_TOOLCHAIN_2ND_ARCH:$ANDROID_KERNEL_TOOLCHAIN_PATH$ANDROID_DEV_SCRIPTS:
 
     # If prebuilts/android-emulator/<system>/ exists, prepend it to our PATH
     # to ensure that the corresponding 'emulator' binaries are used.
@@ -932,7 +930,8 @@ function stacks()
             adb shell cat $TMP
         else
             # Dump stacks of native process
-            adb shell debuggerd -b $PID
+            local USE64BIT="$(is64bit $PID)"
+            adb shell debuggerd$USE64BIT -b $PID
         fi
     fi
 }
@@ -944,22 +943,18 @@ function gdbwrapper()
     $GDB_CMD -x "$@"
 }
 
-# process the symbolic link of /proc/$PID/exe and use the host file tool to
-# determine whether it is a 32-bit or 64-bit executable. It returns "" or "64"
-# which can be conveniently used as suffix.
+function get_symbols_directory()
+{
+    echo $(get_abs_build_var TARGET_OUT_UNSTRIPPED)
+}
+
+# Read the ELF header from /proc/$PID/exe to determine if the process is
+# 64-bit.
 function is64bit()
 {
     local PID="$1"
     if [ "$PID" ] ; then
-        local EXE=`adb shell ls -l /proc/$PID/exe \
-                   | tr -d '\r' \
-                   | cut -d'>' -f2 \
-                   | tr -d ' ' \
-                   | cut -d'/' -f4`
-
-        local OUT_EXE_SYMBOLS=$(get_abs_build_var TARGET_OUT_EXECUTABLES_UNSTRIPPED)
-        local IS64BIT=`file $OUT_EXE_SYMBOLS/$EXE | grep "64-bit"`
-        if [ "$IS64BIT" != "" ]; then
+        if [[ "$(adb shell cat /proc/$PID/exe | xxd -l 1 -s 4 -ps)" -eq "02" ]] ; then
             echo "64"
         else
             echo ""
@@ -978,7 +973,7 @@ function gdbclient()
    local OUT_SYMBOLS=$(get_abs_build_var TARGET_OUT_UNSTRIPPED)
    local OUT_SO_SYMBOLS=$(get_abs_build_var TARGET_OUT_SHARED_LIBRARIES_UNSTRIPPED)
    local OUT_VENDOR_SO_SYMBOLS=$(get_abs_build_var TARGET_OUT_VENDOR_SHARED_LIBRARIES_UNSTRIPPED)
-   local OUT_EXE_SYMBOLS=$(get_abs_build_var TARGET_OUT_EXECUTABLES_UNSTRIPPED)
+   local OUT_EXE_SYMBOLS=$(get_symbols_directory)
    local PREBUILTS=$(get_abs_build_var ANDROID_PREBUILTS)
    local ARCH=$(get_build_var TARGET_ARCH)
    local GDB
@@ -996,6 +991,9 @@ function gdbclient()
        local EXE="$1"
        if [ "$EXE" ] ; then
            EXE=$1
+           if [[ $EXE =~ ^[^/].* ]] ; then
+               EXE="system/bin/"$EXE
+           fi
        else
            EXE="app_process"
        fi
@@ -1058,6 +1056,7 @@ function gdbclient()
        else
            WHICH_GDB=$ANDROID_TOOLCHAIN_2ND_ARCH/$GDB
        fi
+
        gdbwrapper $WHICH_GDB "$OUT_ROOT/gdbclient.cmds" "$OUT_EXE_SYMBOLS/$EXE"
   else
        echo "Unable to determine build system output dir."

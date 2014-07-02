@@ -255,7 +255,7 @@ endif
 #
 # Note that this assumes that the 2ND_CPU_ABI for a 64 bit target
 # is always 32 bits. If this isn't the case, these variables should
-# be overriden in the boarc configuration.
+# be overriden in the board configuration.
 ifeq (,$(TARGET_CPU_ABI_LIST_64_BIT))
   ifeq (true|true,$(TARGET_IS_64_BIT)|$(TARGET_SUPPORTS_64_BIT_APPS))
     TARGET_CPU_ABI_LIST_64_BIT := $(TARGET_CPU_ABI) $(TARGET_CPU_ABI2)
@@ -523,7 +523,7 @@ endif
 
 # allow overriding default Java libraries on a per-target basis
 ifeq ($(TARGET_DEFAULT_JAVA_LIBRARIES),)
-  TARGET_DEFAULT_JAVA_LIBRARIES := core core-junit ext framework framework2
+  TARGET_DEFAULT_JAVA_LIBRARIES := core-libart core-junit ext framework framework2
 endif
 
 TARGET_CPU_SMP ?= true

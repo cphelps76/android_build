@@ -424,7 +424,7 @@ $(strip \
     $(if $(_idfName),, \
         $(error $(LOCAL_PATH): Name not defined in call to intermediates-dir-for)) \
     $(eval _idfPrefix := $(if $(strip $(3)),HOST,TARGET)) \
-    $(eval _idf2ndArchPrefix := $(if $(call directory_is_64_bit_blacklisted,$(LOCAL_PATH))$(strip $(5)),$(TARGET_2ND_ARCH_VAR_PREFIX))) \
+    $(eval _idf2ndArchPrefix := $(if $(strip $(5)),$(TARGET_2ND_ARCH_VAR_PREFIX))) \
     $(if $(filter $(_idfPrefix)-$(_idfClass),$(COMMON_MODULE_CLASSES))$(4), \
         $(eval _idfIntBase := $($(_idfPrefix)_OUT_COMMON_INTERMEDIATES)) \
       ,$(if $(filter $(_idfClass),SHARED_LIBRARIES STATIC_LIBRARIES EXECUTABLES GYP),\
@@ -1723,10 +1723,20 @@ $(hide) $(AAPT) package -u $(PRIVATE_AAPT_FLAGS) \
     -F $@
 endef
 
+# We need the extra blank line, so that the command will be on a separate line.
+# $(1): the ABI name
+# $(2): the list of shared libraies
+define _add-jni-shared-libs-to-package-per-abi
+$(hide) cp $(2) $(dir $@)lib/$(1)
+
+endef
+
 define add-jni-shared-libs-to-package
 $(hide) rm -rf $(dir $@)lib
-$(hide) mkdir -p $(dir $@)lib/$(PRIVATE_JNI_SHARED_LIBRARIES_ABI)
-$(hide) cp $(PRIVATE_JNI_SHARED_LIBRARIES) $(dir $@)lib/$(PRIVATE_JNI_SHARED_LIBRARIES_ABI)
+$(hide) mkdir -p $(addprefix $(dir $@)lib/,$(PRIVATE_JNI_SHARED_LIBRARIES_ABI))
+$(foreach abi,$(PRIVATE_JNI_SHARED_LIBRARIES_ABI),\
+  $(call _add-jni-shared-libs-to-package-per-abi,$(abi),\
+    $(patsubst $(abi):%,%,$(filter $(abi):%,$(PRIVATE_JNI_SHARED_LIBRARIES)))))
 $(hide) (cd $(dir $@) && zip -r $(notdir $@) lib)
 $(hide) rm -rf $(dir $@)lib
 endef
@@ -2118,20 +2128,6 @@ define set-inherited-package-variables-internal
     $(eval LOCAL_OVERRIDES_PACKAGES := $(sort $(LOCAL_OVERRIDES_PACKAGES) $(word 2,$(_o)))) \
     true \
   ,)
-endef
-
-###########################################################
-## Expand a module name list with REQUIRED modules
-###########################################################
-# $(1): The variable name that holds the initial module name list.
-#       the variable will be modified to hold the expanded results.
-# $(2): The initial module name list.
-# Returns empty string (maybe with some whitespaces).
-define expand-required-modules
-$(eval _erm_new_modules := $(sort $(filter-out $($(1)),\
-  $(foreach m,$(2),$(ALL_MODULES.$(m).REQUIRED)))))\
-$(if $(_erm_new_modules),$(eval $(1) += $(_erm_new_modules))\
-  $(call expand-required-modules,$(1),$(_erm_new_modules)))
 endef
 
 ###########################################################
