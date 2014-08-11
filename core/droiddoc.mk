@@ -51,25 +51,22 @@ ifeq ($(LOCAL_DROIDDOC_CUSTOM_ASSET_DIR),)
 LOCAL_DROIDDOC_CUSTOM_ASSET_DIR := assets
 endif
 
-
+ifeq ($(LOCAL_IS_HOST_MODULE),true)
 $(full_target): PRIVATE_BOOTCLASSPATH :=
-ifeq ($(BUILD_OS),linux)
-# You have to set bootclasspath for javadoc manually on linux since Java 6.
-host_jdk_rt_jar := $(dir $(HOST_JDK_TOOLS_JAR))../jre/lib/rt.jar
-$(full_target): PRIVATE_BOOTCLASSPATH := $(host_jdk_rt_jar)
-endif
-
-ifneq ($(LOCAL_IS_HOST_MODULE),true)
+else
 
 ifneq ($(LOCAL_SDK_VERSION),)
   ifeq ($(LOCAL_SDK_VERSION)$(TARGET_BUILD_APPS),current)
     # Use android_stubs_current if LOCAL_SDK_VERSION is current and no TARGET_BUILD_APPS.
     LOCAL_JAVA_LIBRARIES := android_stubs_current $(LOCAL_JAVA_LIBRARIES)
+    $(full_target): PRIVATE_BOOTCLASSPATH := $(call java-lib-files, android_stubs_current)
   else
     LOCAL_JAVA_LIBRARIES := sdk_v$(LOCAL_SDK_VERSION) $(LOCAL_JAVA_LIBRARIES)
+    $(full_target): PRIVATE_BOOTCLASSPATH := $(call java-lib-files, sdk_v$(LOCAL_SDK_VERSION))
   endif
 else
-  LOCAL_JAVA_LIBRARIES := core ext framework $(LOCAL_JAVA_LIBRARIES)
+  LOCAL_JAVA_LIBRARIES := core-libart ext framework framework2 $(LOCAL_JAVA_LIBRARIES)
+  $(full_target): PRIVATE_BOOTCLASSPATH := $(call java-lib-files, core-libart)
 endif  # LOCAL_SDK_VERSION
 LOCAL_JAVA_LIBRARIES := $(sort $(LOCAL_JAVA_LIBRARIES))
 
@@ -156,17 +153,16 @@ $(full_target): PRIVATE_LOCAL_PATH := $(LOCAL_PATH)
 html_dir_files := $(shell find $(LOCAL_PATH)/$(LOCAL_DROIDDOC_HTML_DIR) -type f)
 
 $(full_target): $(full_src_files) $(droiddoc_templates) $(droiddoc) $(html_dir_files) $(full_java_lib_deps) $(LOCAL_ADDITIONAL_DEPENDENCIES)
-	@echo -e ${CL_YLW}"Docs droiddoc:"${CL_RST}" $(PRIVATE_OUT_DIR)"
+	@echo Docs droiddoc: $(PRIVATE_OUT_DIR)
 	$(hide) mkdir -p $(dir $@)
 	$(call prepare-doc-source-list,$(PRIVATE_SRC_LIST_FILE),$(PRIVATE_JAVA_FILES), \
 			$(PRIVATE_SOURCE_INTERMEDIATES_DIR) $(PRIVATE_ADDITIONAL_JAVA_DIR))
 	$(hide) ( \
-		head -1 $(PRIVATE_SRC_LIST_FILE) | tr " " "\n" | sort | uniq | tr "\n" " " > $(PRIVATE_SRC_LIST_FILE)_temp; \
-		cat $(PRIVATE_SRC_LIST_FILE) | sed '1 d' >> $(PRIVATE_SRC_LIST_FILE)_temp; \
-		mv $(PRIVATE_SRC_LIST_FILE)_temp $(PRIVATE_SRC_LIST_FILE); \
 		javadoc \
+                -encoding UTF-8 \
                 \@$(PRIVATE_SRC_LIST_FILE) \
                 -J-Xmx1280m \
+                -XDignore.symbol.file \
                 $(PRIVATE_PROFILING_OPTIONS) \
                 -quiet \
                 -doclet com.google.doclava.Doclava \
@@ -192,20 +188,20 @@ else
 ##
 ##
 $(full_target): $(full_src_files) $(full_java_lib_deps)
-	@echo -e ${CL_YLW}"Docs javadoc:"${CL_RST}" $(PRIVATE_OUT_DIR)"
+	@echo Docs javadoc: $(PRIVATE_OUT_DIR)
 	@mkdir -p $(dir $@)
 	$(call prepare-doc-source-list,$(PRIVATE_SRC_LIST_FILE),$(PRIVATE_JAVA_FILES), \
 			$(PRIVATE_SOURCE_INTERMEDIATES_DIR) $(PRIVATE_ADDITIONAL_JAVA_DIR))
 	$(hide) ( \
-		head -1 $(PRIVATE_SRC_LIST_FILE) | tr " " "\n" | sort | uniq | tr "\n" " " > $(PRIVATE_SRC_LIST_FILE)_temp; \
-		cat $(PRIVATE_SRC_LIST_FILE) | sed '1 d' >> $(PRIVATE_SRC_LIST_FILE)_temp; \
-		mv $(PRIVATE_SRC_LIST_FILE)_temp $(PRIVATE_SRC_LIST_FILE); \
 		javadoc \
+                -encoding UTF-8 \
                 $(PRIVATE_DROIDDOC_OPTIONS) \
                 \@$(PRIVATE_SRC_LIST_FILE) \
                 -J-Xmx1024m \
+                -XDignore.symbol.file \
                 $(PRIVATE_PROFILING_OPTIONS) \
                 $(addprefix -classpath ,$(PRIVATE_CLASSPATH)) \
+                $(addprefix -bootclasspath ,$(PRIVATE_BOOTCLASSPATH)) \
                 -sourcepath $(PRIVATE_SOURCE_PATH)$(addprefix :,$(PRIVATE_CLASSPATH)) \
                 -d $(PRIVATE_OUT_DIR) \
                 -quiet \
@@ -232,10 +228,12 @@ ifeq ($(strip $(LOCAL_UNINSTALLABLE_MODULE)),)
 out_zip := $(OUT_DOCS)/$(LOCAL_MODULE)-docs.zip
 $(out_zip): PRIVATE_DOCS_DIR := $(out_dir)
 $(out_zip): $(full_target)
-	@echo -e ${CL_YLW}"Package docs:"${CL_RST}" $@"
+	@echo Package docs: $@
 	@rm -f $@
 	@mkdir -p $(dir $@)
 	$(hide) ( F=$$(pwd)/$@ ; cd $(PRIVATE_DOCS_DIR) && zip -rq $$F * )
+
+$(LOCAL_MODULE)-docs.zip : $(out_zip)
 
 $(call dist-for-goals,docs,$(out_zip))
 

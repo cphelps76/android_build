@@ -24,22 +24,22 @@ PRODUCT_PACKAGES := \
 	Exchange2 \
 	FusedLocation \
 	Gallery \
+	Keyguard \
 	Music \
 	Mms \
 	OpenWnn \
+	PrintSpooler \
 	libWnnEngDic \
 	libWnnJpnDic \
 	libwnndict \
-	Phone \
+	TeleService \
 	PinyinIME \
-	libjni_pinyinime \
 	Protips \
 	SoftKeyboard \
 	SystemUI \
 	Launcher2 \
 	Development \
 	DevelopmentSettings \
-	DrmProvider \
 	Fallback \
 	Settings \
 	SdkSetup \
@@ -55,14 +55,16 @@ PRODUCT_PACKAGES := \
 	QuickSearchBox \
 	WidgetPreview \
 	librs_jni \
-	ConnectivityTest \
-	GpsLocationTest \
 	CalendarProvider \
 	Calendar \
 	SmokeTest \
 	SmokeTestApp \
+	EmulatorSmokeTests \
 	rild \
-	LegacyCamera
+	LegacyCamera \
+	Dialer
+
+
 
 # Define the host tools and libs that are parts of the SDK.
 -include sdk/build/product_sdk.mk
@@ -78,7 +80,6 @@ PRODUCT_PACKAGE_OVERLAYS := development/sdk_overlay
 
 PRODUCT_COPY_FILES := \
 	device/generic/goldfish/data/etc/apns-conf.xml:system/etc/apns-conf.xml \
-	system/core/rootdir/etc/vold.fstab:system/etc/vold.fstab \
 	frameworks/base/data/sounds/effects/camera_click.ogg:system/media/audio/ui/camera_click.ogg \
 	frameworks/base/data/sounds/effects/VideoRecord.ogg:system/media/audio/ui/VideoRecord.ogg \
 	frameworks/native/data/etc/handheld_core_hardware.xml:system/etc/permissions/handheld_core_hardware.xml \
@@ -91,7 +92,14 @@ PRODUCT_COPY_FILES := \
 
 include $(SRC_TARGET_DIR)/product/emulator.mk
 
+$(call inherit-product-if-exists, frameworks/base/data/sounds/AllAudio.mk)
 $(call inherit-product-if-exists, frameworks/base/data/fonts/fonts.mk)
+$(call inherit-product-if-exists, external/google-fonts/dancing-script/fonts.mk)
+$(call inherit-product-if-exists, external/google-fonts/carrois-gothic-sc/fonts.mk)
+$(call inherit-product-if-exists, external/google-fonts/coming-soon/fonts.mk)
+$(call inherit-product-if-exists, external/noto-fonts/fonts.mk)
+$(call inherit-product-if-exists, external/naver-fonts/fonts.mk)
+$(call inherit-product-if-exists, external/sil-fonts/fonts.mk)
 $(call inherit-product-if-exists, frameworks/base/data/keyboards/keyboards.mk)
 $(call inherit-product-if-exists, frameworks/webview/chromium/chromium.mk)
 $(call inherit-product, $(SRC_TARGET_DIR)/product/core.mk)

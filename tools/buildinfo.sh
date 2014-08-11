@@ -20,10 +20,19 @@ echo "ro.product.brand=$PRODUCT_BRAND"
 echo "ro.product.name=$PRODUCT_NAME"
 echo "ro.product.device=$TARGET_DEVICE"
 echo "ro.product.board=$TARGET_BOOTLOADER_BOARD_NAME"
+
+# These values are deprecated, use "ro.product.cpu.abilist"
+# instead (see below).
+echo "# ro.product.cpu.abi and ro.product.cpu.abi2 are obsolete,"
+echo "# use ro.product.cpu.abilist instead."
 echo "ro.product.cpu.abi=$TARGET_CPU_ABI"
 if [ -n "$TARGET_CPU_ABI2" ] ; then
   echo "ro.product.cpu.abi2=$TARGET_CPU_ABI2"
 fi
+echo "ro.product.cpu.abilist=$TARGET_CPU_ABI_LIST"
+echo "ro.product.cpu.abilist32=$TARGET_CPU_ABI_LIST_32_BIT"
+echo "ro.product.cpu.abilist64=$TARGET_CPU_ABI_LIST_64_BIT"
+
 echo "ro.product.manufacturer=$PRODUCT_MANUFACTURER"
 if [ -n "$PRODUCT_DEFAULT_LANGUAGE" ] ; then
   echo "ro.product.locale.language=$PRODUCT_DEFAULT_LANGUAGE"
@@ -41,7 +50,5 @@ echo "# Do not try to parse ro.build.description or .fingerprint"
 echo "ro.build.description=$PRIVATE_BUILD_DESC"
 echo "ro.build.fingerprint=$BUILD_FINGERPRINT"
 echo "ro.build.characteristics=$TARGET_AAPT_CHARACTERISTICS"
-
-echo "ro.demented.device=$DEMENTED_DEVICE"
 
 echo "# end build properties"

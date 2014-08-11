@@ -21,16 +21,13 @@
 
 PRODUCT_PACKAGES := \
     libfwdlockengine \
+    OpenWnn \
+    PinyinIME \
+    libWnnEngDic \
+    libWnnJpnDic \
+    libwnndict \
     VideoEditor \
     WAPPushManager
-
-
-PRODUCT_PACKAGES += \
-    libvideoeditor_jni \
-    libvideoeditor_core \
-    libvideoeditor_osal \
-    libvideoeditor_videofilters \
-    libvideoeditorplayer
 
 PRODUCT_PACKAGES += \
     Galaxy4 \
@@ -43,14 +40,17 @@ PRODUCT_PACKAGES += \
     VisualizationWallpapers \
     PhotoTable
 
-include $(SRC_TARGET_DIR)/product/emulator.mk
-
 # Additional settings used in all AOSP builds
 PRODUCT_PROPERTY_OVERRIDES := \
-    ro.com.android.dateformat=MM-dd-yyyy
+    ro.com.android.dateformat=MM-dd-yyyy \
+    ro.config.ringtone=Ring_Synth_04.ogg \
+    ro.config.notification_sound=pixiedust.ogg
 
 # Put en_US first in the list, so make it default.
 PRODUCT_LOCALES := en_US
+
+# Include drawables for all densities
+PRODUCT_AAPT_CONFIG := normal hdpi xhdpi xxhdpi
 
 # Get some sounds
 $(call inherit-product-if-exists, frameworks/base/data/sounds/AllAudio.mk)

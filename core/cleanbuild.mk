@@ -14,7 +14,7 @@
 #
 
 # Don't bother with the cleanspecs if you are running mm/mmm
-ifndef ONE_SHOT_MAKEFILE
+ifeq ($(ONE_SHOT_MAKEFILE)$(dont_bother),)
 
 INTERNAL_CLEAN_STEPS :=
 
@@ -81,6 +81,28 @@ else
     $(info Clean step: $(INTERNAL_CLEAN_STEP.$(step))) \
     $(shell $(INTERNAL_CLEAN_STEP.$(step))) \
    )
+
+  # Rewrite the clean step for the second arch.
+  ifdef TARGET_2ND_ARCH
+  # $(1): the clean step cmd
+  # $(2): the prefix to search for
+  # $(3): the prefix to replace with
+  define -cs-rewrite-cleanstep
+  $(if $(filter $(2)/%,$(1)),\
+    $(eval _crs_new_cmd := $(patsubst $(2)/%,$(3)/%,$(1)))\
+    $(info Clean step: $(_crs_new_cmd))\
+    $(shell $(_crs_new_cmd)))
+  endef
+  $(foreach step,$(steps), \
+    $(call -cs-rewrite-cleanstep,$(INTERNAL_CLEAN_STEP.$(step)),$(TARGET_OUT_INTERMEDIATES),$($(TARGET_2ND_ARCH_VAR_PREFIX)TARGET_OUT_INTERMEDIATES))\
+    $(call -cs-rewrite-cleanstep,$(INTERNAL_CLEAN_STEP.$(step)),$(TARGET_OUT_SHARED_LIBRARIES),$($(TARGET_2ND_ARCH_VAR_PREFIX)TARGET_OUT_SHARED_LIBRARIES))\
+    $(call -cs-rewrite-cleanstep,$(INTERNAL_CLEAN_STEP.$(step)),$(TARGET_OUT_VENDOR_SHARED_LIBRARIES),$($(TARGET_2ND_ARCH_VAR_PREFIX)TARGET_OUT_VENDOR_SHARED_LIBRARIES))\
+    $(call -cs-rewrite-cleanstep,$(INTERNAL_CLEAN_STEP.$(step)),$($(TARGET_2ND_ARCH_VAR_PREFIX)TARGET_OUT_INTERMEDIATES),$(TARGET_OUT_INTERMEDIATES))\
+    $(call -cs-rewrite-cleanstep,$(INTERNAL_CLEAN_STEP.$(step)),$($(TARGET_2ND_ARCH_VAR_PREFIX)TARGET_OUT_SHARED_LIBRARIES),$(TARGET_OUT_SHARED_LIBRARIES))\
+    $(call -cs-rewrite-cleanstep,$(INTERNAL_CLEAN_STEP.$(step)),$($(TARGET_2ND_ARCH_VAR_PREFIX)TARGET_OUT_VENDOR_SHARED_LIBRARIES),$(TARGET_OUT_VENDOR_SHARED_LIBRARIES))\
+    )
+  endif
+  _crs_new_cmd :=
   steps :=
 endif
 CURRENT_CLEAN_BUILD_VERSION :=
@@ -100,7 +122,7 @@ clean_steps_file :=
 INTERNAL_CLEAN_STEPS :=
 INTERNAL_CLEAN_BUILD_VERSION :=
 
-endif  # ifndef ONE_SHOT_MAKEFILE
+endif  # if not ONE_SHOT_MAKEFILE dont_bother
 
 # Since products and build variants (unfortunately) share the same
 # PRODUCT_OUT staging directory, things can get out of sync if different
@@ -179,11 +201,13 @@ installclean_files := \
 	$(HOST_OUT)/obj/NOTICE_FILES \
 	$(HOST_OUT)/sdk \
 	$(PRODUCT_OUT)/*.img \
+	$(PRODUCT_OUT)/*.ini \
 	$(PRODUCT_OUT)/*.txt \
 	$(PRODUCT_OUT)/*.xlb \
 	$(PRODUCT_OUT)/*.zip \
-	$(PRODUCT_OUT)/*.zip.md5sum \
+	$(PRODUCT_OUT)/kernel \
 	$(PRODUCT_OUT)/data \
+	$(PRODUCT_OUT)/skin \
 	$(PRODUCT_OUT)/obj/APPS \
 	$(PRODUCT_OUT)/obj/NOTICE_FILES \
 	$(PRODUCT_OUT)/obj/PACKAGING \
@@ -216,13 +240,13 @@ endif
 dataclean: FILES := $(dataclean_files)
 dataclean:
 	$(hide) rm -rf $(FILES)
-	@echo -e ${CL_GRN}"Deleted emulator userdata images."${CL_RST}
+	@echo "Deleted emulator userdata images."
 
 .PHONY: installclean
 installclean: FILES := $(installclean_files)
 installclean: dataclean
 	$(hide) rm -rf $(FILES)
-	@echo -e ${CL_GRN}"Deleted images and staging directories."${CL_RST}
+	@echo "Deleted images and staging directories."
 
 ifeq "$(force_installclean)" "true"
   $(info *** Forcing "make installclean"...)

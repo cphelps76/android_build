@@ -184,16 +184,11 @@ ifneq ($(strip $(TARGET_BUILD_APPS)),)
 all_product_configs := $(call get-product-makefiles,\
     $(SRC_TARGET_DIR)/product/AndroidProducts.mk)
 else
-  ifneq ($(DEMENTED_BUILD),)
-    all_product_configs := $(shell ls device/*/$(DEMENTED_BUILD)/demented.mk)
-  else
-    # Read in all of the product definitions specified by the AndroidProducts.mk
-    # files in the tree.
-    all_product_configs := $(get-all-product-makefiles)
-  endif # DC_BUILD
+# Read in all of the product definitions specified by the AndroidProducts.mk
+# files in the tree.
+all_product_configs := $(get-all-product-makefiles)
 endif
 
-ifeq ($(DEMENTED_BUILD),)
 # Find the product config makefile for the current product.
 # all_product_configs consists items like:
 # <product_name>:<path_to_the_product_makefile>
@@ -212,17 +207,11 @@ $(foreach f, $(all_product_configs),\
         $(eval all_product_makefiles += $(f))\
         $(if $(filter $(TARGET_PRODUCT),$(basename $(notdir $(f)))),\
             $(eval current_product_makefile += $(f)),)))
-
 _cpm_words :=
 _cpm_word1 :=
 _cpm_word2 :=
-else
-    current_product_makefile := $(strip $(all_product_configs))
-    all_product_makefiles := $(strip $(all_product_configs))
-endif
 current_product_makefile := $(strip $(current_product_makefile))
 all_product_makefiles := $(strip $(all_product_makefiles))
-
 
 ifneq (,$(filter product-graph dump-products, $(MAKECMDGOALS)))
 # Import all product makefiles.
@@ -256,6 +245,42 @@ endif
 current_product_makefile :=
 all_product_makefiles :=
 all_product_configs :=
+
+
+#############################################################################
+# TODO: Remove this hack once only 1 runtime is left.
+# Include the runtime product makefile based on the product's PRODUCT_RUNTIMES
+$(call clear-var-list, $(_product_var_list))
+
+# Set PRODUCT_RUNTIMES, allowing buildspec to override using OVERRIDE_RUNTIMES
+product_runtimes := $(sort $(PRODUCTS.$(INTERNAL_PRODUCT).PRODUCT_RUNTIMES))
+ifneq ($(OVERRIDE_RUNTIMES),)
+  $(info Overriding PRODUCT_RUNTIMES=$(product_runtimes) with $(OVERRIDE_RUNTIMES))
+  product_runtimes := $(OVERRIDE_RUNTIMES)
+endif
+$(foreach runtime, $(product_runtimes), $(eval include $(SRC_TARGET_DIR)/product/$(runtime).mk))
+$(foreach v, $(_product_var_list), $(if $($(v)),\
+    $(eval PRODUCTS.$(INTERNAL_PRODUCT).$(v) += $(sort $($(v))))))
+
+$(call clear-var-list, $(_product_var_list))
+# Now we can assign to PRODUCT_RUNTIMES
+PRODUCT_RUNTIMES := $(product_runtimes)
+product_runtimes :=
+
+PRODUCTS.$(INTERNAL_PRODUCT).PRODUCT_PROPERTY_OVERRIDES += persist.sys.dalvik.vm.lib.2=$(DALVIK_VM_LIB)
+
+ifeq ($(words $(PRODUCT_RUNTIMES)),1)
+  # If we only have one runtime, we can strip classes.dex by default during dex_preopt
+  DEX_PREOPT_DEFAULT := true
+else
+  # If we have more than one, we leave the classes.dex alone for post-boot analysis
+  DEX_PREOPT_DEFAULT := nostripping
+endif
+
+#############################################################################
+
+# A list of module names of BOOTCLASSPATH (jar files)
+PRODUCT_BOOT_JARS := $(strip $(PRODUCTS.$(INTERNAL_PRODUCT).PRODUCT_BOOT_JARS))
 
 # Find the device that this product maps to.
 TARGET_DEVICE := $(PRODUCTS.$(INTERNAL_PRODUCT).PRODUCT_DEVICE)
@@ -298,6 +323,13 @@ PRODUCT_AAPT_CONFIG := \
     $(subst $(space),$(comma),$(strip $(PRODUCT_AAPT_CONFIG)))
 PRODUCT_AAPT_PREF_CONFIG := \
     $(subst $(space),$(comma),$(strip $(PRODUCT_AAPT_PREF_CONFIG)))
+
+# product-scoped aapt flags
+PRODUCT_AAPT_FLAGS :=
+ifneq ($(filter en_XA ar_XB,$(PRODUCT_LOCALES)),)
+# Force generating resources for pseudo-locales.
+PRODUCT_AAPT_FLAGS += --pseudo-localize
+endif
 
 PRODUCT_BRAND := $(strip $(PRODUCTS.$(INTERNAL_PRODUCT).PRODUCT_BRAND))
 
@@ -380,3 +412,7 @@ PRODUCT_OTA_PUBLIC_KEYS := $(sort \
 
 PRODUCT_EXTRA_RECOVERY_KEYS := $(sort \
     $(PRODUCTS.$(INTERNAL_PRODUCT).PRODUCT_EXTRA_RECOVERY_KEYS))
+
+# If there is no room in /system for the image, place it in /data
+PRODUCT_DEX_PREOPT_IMAGE_IN_DATA := \
+    $(strip $(PRODUCTS.$(INTERNAL_PRODUCT).PRODUCT_DEX_PREOPT_IMAGE_IN_DATA))

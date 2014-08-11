@@ -24,48 +24,48 @@ PRODUCT_PACKAGES := \
     Bluetooth \
     Calculator \
     Calendar \
+    Camera2 \
     CertInstaller \
-    DrmProvider \
     Email \
     Exchange2 \
     FusedLocation \
     Gallery2 \
     InputDevices \
+    Keyguard \
     LatinIME \
     Launcher2 \
     Music \
+    MusicFX \
     OneTimeInitializer \
+    PrintSpooler \
     Provision \
-    Phone \
     QuickSearchBox \
     Settings \
     SystemUI \
+    TeleService \
     CalendarProvider \
-    bluetooth-health \
-    hostapd \
-    wpa_supplicant.conf
+    WallpaperCropper
 
 PRODUCT_PACKAGES += \
-    audio \
+    bcc \
     clatd \
     clatd.conf \
-    dhcpcd.conf \
-    network \
-    pand \
     pppd \
-    sdptool \
-    wpa_supplicant
+    screenrecord
 
 PRODUCT_PACKAGES += \
-    icu.dat
-
-PRODUCT_PACKAGES += \
-    librs_jni
+    librs_jni \
+    libvideoeditor_jni \
+    libvideoeditor_core \
+    libvideoeditor_osal \
+    libvideoeditor_videofilters \
+    libvideoeditorplayer \
 
 PRODUCT_PACKAGES += \
     audio.primary.default \
     audio_policy.default \
     local_time.default \
+    vibrator.default \
     power.default
 
 PRODUCT_PACKAGES += \
@@ -78,8 +78,12 @@ PRODUCT_PROPERTY_OVERRIDES += \
     ro.carrier=unknown
 
 $(call inherit-product-if-exists, frameworks/base/data/fonts/fonts.mk)
+$(call inherit-product-if-exists, external/google-fonts/dancing-script/fonts.mk)
+$(call inherit-product-if-exists, external/google-fonts/carrois-gothic-sc/fonts.mk)
+$(call inherit-product-if-exists, external/google-fonts/coming-soon/fonts.mk)
 $(call inherit-product-if-exists, external/noto-fonts/fonts.mk)
 $(call inherit-product-if-exists, external/naver-fonts/fonts.mk)
+$(call inherit-product-if-exists, external/sil-fonts/fonts.mk)
 $(call inherit-product-if-exists, frameworks/base/data/keyboards/keyboards.mk)
 $(call inherit-product-if-exists, frameworks/webview/chromium/chromium.mk)
 $(call inherit-product, $(SRC_TARGET_DIR)/product/core.mk)
