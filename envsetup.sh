@@ -40,6 +40,13 @@ EOF
     echo $A
 }
 
+CL_RED="\033[31m"
+CL_GRN="\033[32m"
+CL_YLW="\033[33m"
+CL_BLU="\033[34m"
+CL_MAG="\033[35m"
+CL_CYN="\033[36m"
+CL_RST="\033[0m"
 # Get the value of a build variable as an absolute path.
 function get_abs_build_var()
 {
@@ -73,13 +80,13 @@ function check_product()
         return
     fi
 
-    if (echo -n $1 | grep -q -e "^cm_") ; then
-       CM_BUILD=$(echo -n $1 | sed -e 's/^cm_//g')
-       export BUILD_NUMBER=$((date +%s%N ; echo $CM_BUILD; hostname) | openssl sha1 | sed -e 's/.*=//g; s/ //g' | cut -c1-10)
+    if (echo -n $1 | grep -q -e "^demented_") ; then
+       DEMENTED_BUILD=$(echo -n $1 | sed -e 's/^DEMENTED_//g')
+       export BUILD_NUMBER=$((date +%s%N ; echo $DEMENTED_BUILD; hostname) | openssl sha1 | sed -e 's/.*=//g; s/ //g' | cut -c1-10)
     else
-       CM_BUILD=
+       DEMENTED_BUILD=
     fi
-    export CM_BUILD
+    export DEMENTED_BUILD
 
     CALLED_FROM_SETUP=true BUILD_SYSTEM=build/core \
         TARGET_PRODUCT=$1 \
@@ -454,49 +461,46 @@ function add_lunch_combo()
     LUNCH_MENU_CHOICES=(${LUNCH_MENU_CHOICES[@]} $new_combo)
 }
 
-# add the default one here
-add_lunch_combo aosp_arm-eng
-add_lunch_combo aosp_x86-eng
-add_lunch_combo aosp_mips-eng
-add_lunch_combo vbox_x86-eng
-
 function print_lunch_menu()
 {
-    local uname=$(uname)
+    clear
+
     echo
-    echo "You're building on" $uname
-    if [ "$(uname)" = "Darwin" ] ; then
-       echo "  (ohai, koush!)"
-    fi
+    echo ""
+    echo ""
+    echo -e ${CL_CYN}"     ___ _____ __  __  _____ _   _ _____ _____ ___  "
+    echo -e "    | _ \  ___|  \/  ||  ___| \ | |_   _|  ___| _ \ "
+    echo -e "    || || |__ | .  . || |__ |  \| | | | | |__ || || "
+    echo -e "    || ||  __|| |\/| ||  __|| . | | | | |  __||| || "
+    echo -e "    ||//| |___| |  | || |___| |\  | | | | |___||// "
+    echo -e "    |_/ \____/\_|  |_/\____/\_| \_/ \_/ \____/|_/  "${CL_RST}
+    echo ""
+    echo ""
+
     echo
-    if [ "z${CM_DEVICES_ONLY}" != "z" ]; then
-       echo "Breakfast menu... pick a combo:"
-    else
-       echo "Lunch menu... pick a combo:"
-    fi
+    echo -e ${CL_BLU}"   <<<< DEMENTED DROID AOSP N8013 4.3 >>>>"${CL_RST}
+    echo ""
+    echo ""
+    echo ""
 
     local i=1
     local choice
     for choice in ${LUNCH_MENU_CHOICES[@]}
     do
-        echo " $i. $choice "
+        echo -e ${CL_CYN}"     $i. $choice"
         i=$(($i+1))
-    done | column
+    done
 
-    if [ "z${CM_DEVICES_ONLY}" != "z" ]; then
-       echo "... and don't forget the bacon!"
-    fi
-
-    echo
+    echo -e ${CL_RST}
 }
 
 function brunch()
 {
     breakfast $*
     if [ $? -eq 0 ]; then
-        mka bacon
+        mka demented
     else
-        echo "No such item in brunch menu. Try 'breakfast'"
+        echo -e ${CL_RED}"No such item in brunch menu. Try 'breakfast'"${CL_RST}
         return 1
     fi
     return $?
@@ -505,10 +509,10 @@ function brunch()
 function breakfast()
 {
     target=$1
-    CM_DEVICES_ONLY="true"
-    unset LUNCH_MENU_CHOICES
+    DEMENTED_DEVICES_ONLY="true"
     add_lunch_combo full-eng
-    for f in `/bin/ls vendor/cm/vendorsetup.sh 2> /dev/null`
+    unset LUNCH_MENU_CHOICES
+    for f in `/bin/ls vendor/DEMENTED/vendorsetup.sh 2> /dev/null`
         do
             echo "including $f"
             . $f
@@ -524,8 +528,8 @@ function breakfast()
             # A buildtype was specified, assume a full device name
             lunch $target
         else
-            # This is probably just the CM model name
-            lunch cm_$target-userdebug
+            # This is probably just the DEMENTED model name
+            lunch demented_$target-userdebug
         fi
     fi
     return $?
@@ -541,7 +545,8 @@ function lunch()
         answer=$1
     else
         print_lunch_menu
-        echo -n "Which would you like? [aosp_arm-eng] "
+        echo ""
+        echo -n "Enter your selection and let's build this shit: "
         read answer
     fi
 
@@ -564,7 +569,8 @@ function lunch()
     if [ -z "$selection" ]
     then
         echo
-        echo "Invalid lunch combo: $answer"
+        echo -e ${CL_RED}"Invalid DEMENTED combo: $answer"${CL_RST}
+        echo
         return 1
     fi
 
@@ -586,8 +592,8 @@ function lunch()
     if [ $? -ne 0 ]
     then
         echo
-        echo "** Don't have a product spec for: '$product'"
-        echo "** Do you have the right repo manifest?"
+        echo -e ${CL_RED}"** Don't have a product spec for: '$product'"
+        echo -e"** Do you have the right repo manifest?"${CL_RST}
         product=
     fi
 
@@ -596,8 +602,8 @@ function lunch()
     if [ $? -ne 0 ]
     then
         echo
-        echo "** Invalid variant: '$variant'"
-        echo "** Must be one of ${VARIANT_CHOICES[@]}"
+        echo -e ${CL_RED}"** Invalid variant: '$variant'"
+        echo -e"** Must be one of ${VARIANT_CHOICES[@]}"${CL_RST}
         variant=
     fi
 
@@ -674,8 +680,8 @@ function tapas()
 function eat()
 {
     if [ "$OUT" ] ; then
-        MODVERSION=$(get_build_var CM_VERSION)
-        ZIPFILE=cm-$MODVERSION.zip
+        MODVERSION=$(get_build_var DEMENTED_VERSION)
+        ZIPFILE=DEMENTED-$MODVERSION.zip
         ZIPPATH=$OUT/$ZIPFILE
         if [ ! -f $ZIPPATH ] ; then
             echo "Nothing to eat"
@@ -690,7 +696,7 @@ function eat()
             done
             echo "Device Found.."
         fi
-    if (adb shell cat /system/build.prop | grep -q "ro.cm.device=$CM_BUILD");
+    if (adb shell cat /system/build.prop | grep -q "ro.demented.device=$DEMENTED_BUILD");
     then
         # if adbd isn't root we can't write to /cache/recovery/
         adb root
@@ -719,7 +725,7 @@ EOF
     fi
     return $?
     else
-        echo "The connected device does not appear to be $CM_BUILD, run away!"
+        echo "The connected device does not appear to be $DEMENTED_BUILD, run away!"
     fi
 }
 
@@ -1499,7 +1505,7 @@ function installboot()
     sleep 1
     adb wait-for-online shell mount /system 2>&1 > /dev/null
     adb wait-for-online remount
-    if (adb shell cat /system/build.prop | grep -q "ro.cm.device=$CM_BUILD");
+    if (adb shell cat /system/build.prop | grep -q "ro.demented.device=$demented_BUILD");
     then
         adb push $OUT/boot.img /cache/
         for i in $OUT/system/lib/modules/*;
@@ -1515,7 +1521,7 @@ function installboot()
         adb shell chmod 644 /system/lib/modules/*
         echo "Installation complete."
     else
-        echo "The connected device does not appear to be $CM_BUILD, run away!"
+        echo "The connected device does not appear to be $DEMENTED_BUILD, run away!"
     fi
 }
 
@@ -1549,13 +1555,13 @@ function installrecovery()
     sleep 1
     adb wait-for-online shell mount /system 2>&1 >> /dev/null
     adb wait-for-online remount
-    if (adb shell cat /system/build.prop | grep -q "ro.cm.device=$CM_BUILD");
+    if (adb shell cat /system/build.prop | grep -q "ro.demented.device=$DEMENTED_BUILD");
     then
         adb push $OUT/recovery.img /cache/
         adb shell dd if=/cache/recovery.img of=$PARTITION
         echo "Installation complete."
     else
-        echo "The connected device does not appear to be $CM_BUILD, run away!"
+        echo "The connected device does not appear to be $DEMENTED_BUILD, run away!"
     fi
 }
 
@@ -1877,7 +1883,7 @@ function cmka() {
     if [ ! -z "$1" ]; then
         for i in "$@"; do
             case $i in
-                bacon|otapackage|systemimage)
+                demented|otapackage|systemimage)
                     mka installclean
                     mka $i
                     ;;
@@ -1929,7 +1935,7 @@ function dopush()
         echo "Device Found."
     fi
 
-    if (adb shell cat /system/build.prop | grep -q "ro.cm.device=$CM_BUILD");
+    if (adb shell cat /system/build.prop | grep -q "ro.demented.device=$DEMENTED_BUILD");
     then
     # retrieve IP and PORT info if we're using a TCP connection
     TCPIPPORT=$(adb devices | egrep '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+:[0-9]+[^0-9]+' \
@@ -1980,7 +1986,7 @@ function dopush()
     rm -f $OUT/.log
     return 0
     else
-        echo "The connected device does not appear to be $CM_BUILD, run away!"
+        echo "The connected device does not appear to be $DEMENTED_BUILD, run away!"
     fi
 }
 
@@ -2051,7 +2057,7 @@ if [ "x$SHELL" != "x/bin/bash" ]; then
 fi
 
 # Execute the contents of any vendorsetup.sh files we can find.
-for f in `/bin/ls vendor/*/vendorsetup.sh vendor/*/*/vendorsetup.sh device/*/*/vendorsetup.sh 2> /dev/null`
+for f in `/bin/ls vendor/DEMENTED/vendorsetup.sh 2> /dev/null`
 
 do
     echo "including $f"
@@ -2061,7 +2067,7 @@ unset f
 
 # Add completions
 check_bash_version && {
-    dirs="sdk/bash_completion vendor/cm/bash_completion"
+    dirs="sdk/bash_completion vendor/DEMENTED/bash_completion"
     for dir in $dirs; do
     if [ -d ${dir} ]; then
         for f in `/bin/ls ${dir}/[a-z]*.bash 2> /dev/null`; do
