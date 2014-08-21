@@ -81,7 +81,7 @@ function check_product()
     fi
 
     if (echo -n $1 | grep -q -e "^demented_") ; then
-       DEMENTED_BUILD=$(echo -n $1 | sed -e 's/^DEMENTED_//g')
+       DEMENTED_BUILD=$(echo -n $1 | sed -e 's/^demented_//g')
        export BUILD_NUMBER=$((date +%s%N ; echo $DEMENTED_BUILD; hostname) | openssl sha1 | sed -e 's/.*=//g; s/ //g' | cut -c1-10)
     else
        DEMENTED_BUILD=
@@ -1505,7 +1505,7 @@ function installboot()
     sleep 1
     adb wait-for-online shell mount /system 2>&1 > /dev/null
     adb wait-for-online remount
-    if (adb shell cat /system/build.prop | grep -q "ro.demented.device=$demented_BUILD");
+    if (adb shell cat /system/build.prop | grep -q "ro.demented.device=$DEMENTED_BUILD");
     then
         adb push $OUT/boot.img /cache/
         for i in $OUT/system/lib/modules/*;
