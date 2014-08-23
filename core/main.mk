@@ -138,7 +138,9 @@ $(warning ************************************************************)
 $(error Directory names containing spaces not supported)
 endif
 
+HOST_CHECK := $(shell hostname)
 # Check for the corrent jdk
+ifneq ($(HOST_CHECK), cphelps76-HP-Pavilion-dv7)
 ifneq ($(shell java -version 2>&1 | grep -i openjdk),)
 $(info ************************************************************)
 $(info You are attempting to build with an unsupported JDK.)
@@ -183,6 +185,7 @@ $(info Please follow the machine setup instructions at)
 $(info $(space)$(space)$(space)$(space)https://source.android.com/source/download.html)
 $(info ************************************************************)
 $(error stop)
+endif
 endif
 
 ifeq (darwin,$(HOST_OS))
