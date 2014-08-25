@@ -25,7 +25,6 @@ Invoke ". build/envsetup.sh" from your shell to add the following functions to y
 - mkap:     Builds the module(s) using mka and pushes them to the device.
 - cmka:     Cleans and builds using mka.
 - reposync: Parallel repo sync using ionice and SCHED_BATCH.
-- repopick: Utility to fetch changes from Gerrit.
 - installboot: Installs a boot.img to the connected device.
 - installrecovery: Installs a recovery.img to the connected device.
 
@@ -269,21 +268,6 @@ function settitle()
         # Inject build data into hardstatus
         export PROMPT_COMMAND="$(echo $PROMPT_COMMAND | sed -e 's/\\033]0;\(.*\)\\007/\\033]0;$ANDROID_PROMPT_PREFIX \1\\007/g')"
     fi
-}
-
-function check_bash_version()
-{
-    # Keep us from trying to run in something that isn't bash.
-    if [ -z "${BASH_VERSION}" ]; then
-        return 1
-    fi
-
-    # Keep us from trying to run in bash that's too old.
-    if [ "${BASH_VERSINFO[0]}" -lt 4 ] ; then
-        return 2
-    fi
-
-    return 0
 }
 
 function choosetype()
@@ -1995,11 +1979,6 @@ alias mmmp='dopush mmm'
 alias mkap='dopush mka'
 alias cmkap='dopush cmka'
 
-function repopick() {
-    T=$(gettop)
-    $T/build/tools/repopick.py $@
-}
-
 function fixup_common_out_dir() {
     common_out_dir=$(get_build_var OUT_DIR)/target/common
     target_device=$(get_build_var TARGET_DEVICE)
@@ -2017,7 +1996,6 @@ function fixup_common_out_dir() {
         mkdir -p ${common_out_dir}
     fi
 }
-
 
 # Force JAVA_HOME to point to java 1.6 if it isn't already set
 function set_java_home() {
@@ -2064,18 +2042,5 @@ do
     . $f
 done
 unset f
-
-# Add completions
-check_bash_version && {
-    dirs="sdk/bash_completion vendor/DEMENTED/bash_completion"
-    for dir in $dirs; do
-    if [ -d ${dir} ]; then
-        for f in `/bin/ls ${dir}/[a-z]*.bash 2> /dev/null`; do
-            echo "including $f"
-            . $f
-        done
-    fi
-    done
-}
 
 export ANDROID_BUILD_TOP=$(gettop)
