@@ -148,7 +148,7 @@ endif
 
 HOST_CHECK := $(shell hostname)
 # Check for the corrent jdk
-ifneq ($(HOST_CHECK), cphelps76-HP-Pavilion-dv7)
+ifneq ($(HOST_CHECK),$(filter $(HOST_CHECK),cphelps76-HP-Pavilion-dv7 cphelps76-XPS-8700))
 ifneq ($(shell java -version 2>&1 | grep -i openjdk),)
 $(info ************************************************************)
 $(info You are attempting to build with an unsupported JDK.)
