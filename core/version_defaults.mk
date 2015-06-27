@@ -56,7 +56,7 @@ ifeq "" "$(PLATFORM_SDK_VERSION)"
   PLATFORM_SDK_VERSION := 22
 endif
 
-ifeq "" "$(PLATFORM_VERSION_CODENAME)"
+ifneq "" "$(PLATFORM_VERSION_CODENAME)UNOFFICIAL"
   # This is the current development code-name, if the build is not a final
   # release build.  If this is a final release build, it is simply "REL".
   PLATFORM_VERSION_CODENAME := REL
