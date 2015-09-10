@@ -102,7 +102,9 @@ $(info   $(CLR_MAG)HOST_OS_EXTRA = $(CLR_CYN)$(HOST_OS_EXTRA))
 $(info   $(CLR_MAG)HOST_BUILD_TYPE = $(CLR_CYN)$(HOST_BUILD_TYPE))
 $(info   $(CLR_MAG)BUILD_ID = $(CLR_CYN)$(BUILD_ID))
 $(info   $(CLR_MAG)OUT_DIR = $(CLR_CYN)$(OUT_DIR))
-ifeq ($(CYNGN_TARGET),true)
+ifneq (,$(filter true, $(CYNGN_TARGET) $(EXTERNAL_CLEAN_TARGET)))
+ifeq ($(CYNGN_TARGET), true)
+endif
 $(info   $(CLR_MAG)CYNGN_TARGET = $(CLR_CYN)$(CYNGN_TARGET))
 $(info   $(CLR_MAG)CYNGN_FEATURES = $(CLR_CYN)$(CYNGN_FEATURES))
 endif
