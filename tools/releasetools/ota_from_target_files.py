@@ -645,6 +645,28 @@ else if get_stage("%(bcb_dev)s") == "3/3" then
   script.Unmount("/data")
   script.AppendExtra("endif;")
 
+  #ASCII font is Doom
+  script.ShowProgress(0.5, 0)
+  script.Print("")
+  script.Print("")
+  script.Print(" ___ _____ __  __  _____ _   _ _____ _____ ___  ")
+  script.Print("| _ \  ___|  \/  ||  ___| \ | |_   _|  ___| _ \ ")
+  script.Print("|| || |__ | .  . || |__ |  \| | | | | |__ || || ")
+  script.Print("|| ||  __|| |\/| ||  __|| . ` | | | |  __||| || ")
+  script.Print("||//| |___| |  | || |___| |\  | | | | |___||//  ")
+  script.Print("|_/ \____/\_|  |_/\____/\_| \_/ \_/ \____/|_/   ")
+  script.Print("")
+  script.Print("                  ____  _____    ")
+  script.Print("                 / ___||  _  |   ")
+  script.Print("                / /___ | | | |   ")
+  script.Print("                | ___ \| | | |   ")
+  script.Print("                | \_/ |\ |_/ /   ")
+  script.Print("                \_____(_)___/    ")
+  script.Print("")
+  script.Print("")
+  script.Print("{x}...Formatting system partition...")
+  script.Print("")
+
   if "selinux_fc" in OPTIONS.info_dict:
     WritePolicyConfig(OPTIONS.info_dict["selinux_fc"], output_zip)
 
@@ -665,9 +687,18 @@ else if get_stage("%(bcb_dev)s") == "3/3" then
   else:
     script.FormatPartition("/system")
     script.Mount("/system", recovery_mount_options)
+    script.ShowProgress(0.5, 40)
+    script.Print("{x}...Installing System...")
+    script.Print("")
+
     if not has_recovery_patch:
       script.UnpackPackageDir("recovery", "/system")
     script.UnpackPackageDir("system", "/system")
+
+    script.Print("{x}...Creating Symlinks...")
+    script.Print("")
+    script.Print("{x}...Setting Permissions...")
+    script.Print("")
 
     symlinks = CopyPartitionFiles(system_items, input_zip, output_zip)
     script.MakeSymlinks(symlinks)
@@ -708,21 +739,29 @@ else if get_stage("%(bcb_dev)s") == "3/3" then
 
   common.CheckSize(boot_img.data, "boot.img", OPTIONS.info_dict)
   common.ZipWriteStr(output_zip, "boot.img", boot_img.data)
-
+  script.ShowProgress(0.2, 0)
   device_specific.FullOTA_PostValidate()
 
   if OPTIONS.backuptool:
     script.ShowProgress(0.02, 10)
     if block_based:
       script.Mount("/system")
+    script.ShowProgress(0.2, 10)
+    script.Print("{x}...Restoring Backed Up Files...")
+    script.Print("")
+
     script.RunBackup("restore")
     if block_based:
       script.Unmount("/system")
 
-  script.ShowProgress(0.05, 5)
+  script.ShowProgress(0.2, 10)
+  script.Print("{x}...Flashing Kernel...")
+  script.Print("")
   script.WriteRawImage("/boot", "boot.img")
 
-  script.ShowProgress(0.2, 10)
+  script.ShowProgress(0.1, 0)
+  script.Print("{x}...Installation Complete!")
+  script.Print("")
   device_specific.FullOTA_InstallEnd()
 
   if OPTIONS.extra_script is not None:
