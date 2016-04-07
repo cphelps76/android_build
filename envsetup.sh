@@ -522,7 +522,7 @@ function print_lunch_menu()
     echo ""
 
     echo
-    echo -e ${CL_BLU}"              <<<< DEMENTED AOSP 5.1 >>>>"${CL_RST}${CL_BLD}
+    echo -e ${CL_BLU}"              <<<< DEMENTED AOSP 6.0.1 >>>>"${CL_RST}${CL_BLD}
     echo ""
     echo ""
     echo ""
