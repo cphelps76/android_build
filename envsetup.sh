@@ -35,6 +35,14 @@ EOF
     echo $A
 }
 
+CL_RED="\033[31m"
+CL_GRN="\033[32m"
+CL_YLW="\033[33m"
+CL_BLU="\033[34m"
+CL_MAG="\033[35m"
+CL_CYN="\033[36m"
+CL_RST="\033[0m"
+CL_BLD="\033[1m"
 # Get the value of a build variable as an absolute path.
 function get_abs_build_var()
 {
@@ -67,6 +75,17 @@ function check_product()
         echo "Couldn't locate the top of the tree.  Try setting TOP." >&2
         return
     fi
+
+    if (echo -n $1 | grep -q -e "^dk_") ; then
+        DEMENTED_BUILD=$(echo -n $1 | sed -e 's/^demented_//g')
+        HIDE_MAKEFILE_INCLUDES=y
+    else
+        DEMENTED_BUILD=
+        HIDE_MAKEFILE_INCLUDES=n
+    fi
+    export DEMENTED_BUILD
+    export HIDE_MAKEFILE_INCLUDES
+
         TARGET_PRODUCT=$1 \
         TARGET_BUILD_VARIANT= \
         TARGET_BUILD_TYPE= \
@@ -459,31 +478,102 @@ function add_lunch_combo()
     LUNCH_MENU_CHOICES=(${LUNCH_MENU_CHOICES[@]} $new_combo)
 }
 
-# add the default one here
-add_lunch_combo aosp_arm-eng
-add_lunch_combo aosp_arm64-eng
-add_lunch_combo aosp_mips-eng
-add_lunch_combo aosp_mips64-eng
-add_lunch_combo aosp_x86-eng
-add_lunch_combo aosp_x86_64-eng
-
 function print_lunch_menu()
 {
-    local uname=$(uname)
+    clear
+
     echo
-    echo "You're building on" $uname
+    echo ""
+    echo ""
+    echo -e ${CL_BLD}""
+    echo -e ${CL_CYN}"     ___ _____ __  __  _____ _   _ _____ _____ ___  "
+    echo -e "    | _ \  ___|  \/  ||  ___| \ | |_   _|  ___| _ \ "
+    echo -e "    || || |__ | .  . || |__ |  \| | | | | |__ || || "
+    echo -e "    || ||  __|| |\/| ||  __|| . | | | | |  __||| || "
+    echo -e "    ||//| |___| |  | || |___| |\  | | | | |___||// "
+    echo -e "    |_/ \____/\_|  |_/\____/\_| \_/ \_/ \____/|_/  "
+    echo ""
+    echo ""
+
     echo
-    echo "Lunch menu... pick a combo:"
+    echo -e ${CL_BLU}"              <<<< DEMENTED AOSP 6.0.1 >>>>"${CL_RST}${CL_BLD}
+    echo ""
+    echo ""
+    echo ""
 
     local i=1
     local choice
     for choice in ${LUNCH_MENU_CHOICES[@]}
     do
-        echo "     $i. $choice"
+        echo -e ${CL_MAG}"     $i. $choice"
         i=$(($i+1))
     done
 
-    echo
+    echo -e ${CL_RST}
+}
+
+function brunch()
+{
+    breakfast $*
+    if [ $? -eq 0 ]; then
+        time mka bacon
+    else
+        echo -e ${CL_BLD}""
+        echo -e ${CL_RED}"No such item in brunch menu. Try 'breakfast'"${CL_RST}
+        return 1
+    fi
+    return $?
+}
+
+function breakfast()
+{
+    target=$1
+    local type=$2
+    if [ -z "$type" ]; then
+        type="UNOFFICIAL"
+    fi
+    export DEMENTED_RELEASE_TYPE=$type
+    DEMENTED_DEVICES_ONLY="true"
+    unset LUNCH_MENU_CHOICES
+    add_lunch_combo full-eng
+    for f in `/bin/ls vendor/demented/vendorsetup.sh 2> /dev/null`
+        do
+echo "including $f"
+            . $f
+        done
+unset f
+
+    if [ $# -eq 0 ]; then
+        # No arguments, so let's have the full menu
+        lunch
+    else
+        echo "z$target" | grep -q "-"
+        if [ $? -eq 0 ]; then
+            # A buildtype was specified, assume a full device name
+            lunch $target
+        else
+            # This is probably just the DEMENTED model name
+            if [ -z "$variant" ]; then
+                variant="userdebug"
+            fi
+            lunch demented_$target-userdebug
+        fi
+    fi
+    return $?
+}
+
+alias bib=breakfast
+
+# Make using all available CPUs
+function mka() {
+    case `uname -s` in
+        Darwin)
+            make -j `sysctl hw.ncpu|cut -d" " -f2` "$@"
+            ;;
+        *)
+            schedtool -B -n 1 -e ionice -n 1 make -j `cat /proc/cpuinfo | grep "^processor" | wc -l` "$@"
+            ;;
+    esac
 }
 
 function lunch()
@@ -494,7 +584,9 @@ function lunch()
         answer=$1
     else
         print_lunch_menu
-        echo -n "Which would you like? [aosp_arm-eng] "
+        echo ""
+        echo -e ${CL_BLD}
+        echo -e ${CL_BLU} "Enter your selection and let's build this shit: "${CL_RST}
         read answer
     fi
 
@@ -517,7 +609,9 @@ function lunch()
     if [ -z "$selection" ]
     then
         echo
-        echo "Invalid lunch combo: $answer"
+        echo -e ${CL_BLD}
+        echo -e ${CL_RED}"Invalid DEMENTED combo: $answer"${CL_RST}
+        echo
         return 1
     fi
 
@@ -528,8 +622,8 @@ function lunch()
     if [ $? -ne 0 ]
     then
         echo
-        echo "** Don't have a product spec for: '$product'"
-        echo "** Do you have the right repo manifest?"
+        echo -e ${CL_RED}"** Don't have a product spec for: '$product'"
+        echo -e"** Do you have the right repo manifest?"${CL_RST}
         product=
     fi
 
@@ -538,8 +632,8 @@ function lunch()
     if [ $? -ne 0 ]
     then
         echo
-        echo "** Invalid variant: '$variant'"
-        echo "** Must be one of ${VARIANT_CHOICES[@]}"
+        echo -e ${CL_RED}"** Invalid variant: '$variant'"
+        echo -e"** Must be one of ${VARIANT_CHOICES[@]}"${CL_RST}
         variant=
     fi
 
@@ -554,6 +648,8 @@ function lunch()
     export TARGET_BUILD_TYPE=release
 
     echo
+
+    fixup_common_out_dir
 
     set_stuff_for_environment
     printconfig
@@ -1487,6 +1583,24 @@ function make()
     return $ret
 }
 
+function fixup_common_out_dir() {
+    common_out_dir=$(get_build_var OUT_DIR)/target/common
+    target_device=$(get_build_var TARGET_DEVICE)
+    if [ ! -z $ANDROID_FIXUP_COMMON_OUT ]; then
+        if [ -d ${common_out_dir} ] && [ ! -L ${common_out_dir} ]; then
+            mv ${common_out_dir} ${common_out_dir}-${target_device}
+            ln -s ${common_out_dir}-${target_device} ${common_out_dir}
+        else
+            [ -L ${common_out_dir} ] && rm ${common_out_dir}
+            mkdir -p ${common_out_dir}-${target_device}
+            ln -s ${common_out_dir}-${target_device} ${common_out_dir}
+        fi
+    else
+        [ -L ${common_out_dir} ] && rm ${common_out_dir}
+        mkdir -p ${common_out_dir}
+    fi
+}
+
 if [ "x$SHELL" != "x/bin/bash" ]; then
     case `ps -o command -p $$` in
         *bash*)
@@ -1498,8 +1612,8 @@ if [ "x$SHELL" != "x/bin/bash" ]; then
 fi
 
 # Execute the contents of any vendorsetup.sh files we can find.
-for f in `test -d device && find -L device -maxdepth 4 -name 'vendorsetup.sh' 2> /dev/null | sort` \
-         `test -d vendor && find -L vendor -maxdepth 4 -name 'vendorsetup.sh' 2> /dev/null | sort`
+for f in `/bin/ls vendor/demented/vendorsetup.sh 2> /dev/null`
+
 do
     echo "including $f"
     . $f
