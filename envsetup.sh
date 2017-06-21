@@ -18,6 +18,7 @@ Invoke ". build/envsetup.sh" from your shell to add the following functions to y
 - sepgrep: Greps on all local sepolicy files.
 - sgrep:   Greps on all local source files.
 - godir:   Go to the directory containing a file.
+- happy_ending: DEMENTED banner
 
 Environemnt options:
 - SANITIZE_HOST: Set to 'true' to use ASAN for all host modules. Note that
@@ -517,6 +518,7 @@ function brunch()
     breakfast $*
     if [ $? -eq 0 ]; then
         time mka bacon
+        happy_ending
     else
         echo -e ${CL_BLD}""
         echo -e ${CL_RED}"No such item in brunch menu. Try 'breakfast'"${CL_RST}
@@ -667,6 +669,14 @@ function _lunch()
     return 0
 }
 complete -F _lunch lunch
+
+function happy_ending() {
+    execute_dir=$ANDROID_BUILD_TOP/vendor/demented/tools
+    execute=./happy_ending
+    cd $execute_dir
+    $execute
+    cd $OLDPWD
+}
 
 # Configures the build to build unbundled apps.
 # Run tapas with one or more app names (from LOCAL_PACKAGE_NAME)
